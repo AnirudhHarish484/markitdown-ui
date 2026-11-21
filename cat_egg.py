@@ -11,6 +11,10 @@ JS = r"""
   // If the file is missing, the built-in synthesized beat plays instead.
   var CUSTOM_AUDIO_URL = '/app/static/oiia.mp3';
 
+  // Optional: use your own cat picture instead of the drawn one.
+  // Put the image in the static folder and set e.g. '/app/static/cat.png' (PNG with a transparent background works best).
+  var CAT_IMAGE_URL = '/app/static/cat.png';
+
   var css = `
   #cat-egg-root { position: fixed; right: 12px; bottom: 12px; z-index: 999999; }
   #cat-tiny { width: 40px; height: 40px; padding: 0; border: 0; background: none; cursor: pointer;
@@ -19,7 +23,7 @@ JS = r"""
   #cat-tiny:focus-visible, #cat-big:focus-visible { outline: 3px solid #3b82f6; outline-offset: 3px; border-radius: 50%; }
   #cat-big { display: none; position: fixed; right: 24px; bottom: 24px; width: 150px; height: 150px;
              padding: 0; border: 0; background: none; cursor: pointer; z-index: 999999; }
-  #cat-big svg, .cat-float svg { animation: cat-spin .55s linear infinite; }
+  #cat-big svg, #cat-big img, .cat-float svg, .cat-float img { animation: cat-spin .55s linear infinite; }
   #cat-label { display: none; position: fixed; right: 36px; bottom: 182px; z-index: 999999;
                font: 700 18px/1 system-ui, sans-serif; letter-spacing: .08em; color: #c2410c;
                background: #fff7ed; border: 2px solid #fdba74; border-radius: 999px; padding: 6px 14px; }
@@ -29,7 +33,7 @@ JS = r"""
   @keyframes cat-spin { to { transform: rotate(360deg); } }
   @keyframes cat-drift { from { transform: translateX(-12vw); } to { transform: translateX(112vw); } }
   @media (prefers-reduced-motion: reduce) {
-    #cat-big svg, .cat-float svg { animation-duration: 2s; }
+    #cat-big svg, #cat-big img, .cat-float svg, .cat-float img { animation-duration: 2s; }
     .cat-float { display: none !important; }
   }`;
   var style = document.createElement('style');
@@ -46,6 +50,10 @@ JS = r"""
     <path d="M50 72 Q44 79 38 75 M50 72 Q56 79 62 75" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
     <path d="M30 68 L10 64 M30 72 L10 74 M70 68 L90 64 M70 72 L90 74" stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
   </svg>`;
+
+  if (CAT_IMAGE_URL) {
+    CAT = '<img src="' + CAT_IMAGE_URL + '" alt="" draggable="false" style="width:100%;height:100%;object-fit:contain;display:block">';
+  }
 
   var root = document.createElement('div');
   root.id = 'cat-egg-root';
