@@ -1,19 +1,35 @@
 """A tiny cat in the corner of the page. Click it twice for a surprise."""
+import base64
 import json
+import mimetypes
+from pathlib import Path
 
+import streamlit as st
 import streamlit.components.v1 as components
+
+STATIC = Path(__file__).parent / "static"
+MAX_BYTES = 2_000_000  # skip files bigger than 2 MB
+
+
+def _data_uri(names):
+    """Return the first file found in ./static as a data: URI, or None."""
+    for name in names:
+        f = STATIC / name
+        if f.is_file() and f.stat().st_size <= MAX_BYTES:
+            mime = mimetypes.guess_type(f.name)[0] or "application/octet-stream"
+            return "data:%s;base64,%s" % (mime, base64.b64encode(f.read_bytes()).decode())
+    return None
+
 
 JS = r"""
 (function () {
   if (document.getElementById('cat-egg-root')) return;
 
-  // Optional: put a link to your own audio file here (only if you have the rights to use it).
-  // If the file is missing, the built-in synthesized beat plays instead.
-  var CUSTOM_AUDIO_URL = '/app/static/oiia.mp3';
+  // Filled in by Python: static/oiia.mp3 if it exists, otherwise null (built-in synthesized beat).
+  var CUSTOM_AUDIO_URL = __AUDIO__;
 
-  // Optional: use your own cat picture instead of the drawn one.
-  // Put the image in the static folder and set e.g. '/app/static/cat.png' (PNG with a transparent background works best).
-  var CAT_IMAGE_URL = '/app/static/cat.png';
+  // Filled in by Python: static/cat.png (or .jpg/.gif/.webp) if it exists, otherwise null (drawn cat).
+  var CAT_IMAGE_URL = __IMAGE__;
 
   var css = `
   #cat-egg-root { position: fixed; right: 12px; bottom: 12px; z-index: 999999; }
@@ -210,13 +226,20 @@ JS = r"""
 """
 
 
-def add_cat():
-    """Call once near the end of your app to add the cat."""
-    loader = (
+@st.cache_data
+def _loader_html():
+    audio = _data_uri(["oiia.mp3"])
+    image = _data_uri(["cat.png", "cat.jpg", "cat.jpeg", "cat.gif", "cat.webp"])
+    js = JS.replace("__AUDIO__", json.dumps(audio)).replace("__IMAGE__", json.dumps(image))
+    return (
         "<script>(function(){try{var p=window.parent;"
         "if(p.document.getElementById('cat-egg-script'))return;"
         "var s=p.document.createElement('script');s.id='cat-egg-script';"
-        "s.textContent=" + json.dumps(JS) + ";"
+        "s.textContent=" + json.dumps(js) + ";"
         "p.document.body.appendChild(s);}catch(e){}})();</script>"
     )
-    components.html(loader, height=0)
+
+
+def add_cat():
+    """Call once near the end of your app to add the cat."""
+    components.html(_loader_html(), height=0)
