@@ -6,6 +6,8 @@ from pathlib import Path
 import streamlit as st
 from markitdown import MarkItDown
 
+from cat_egg import add_cat
+
 MAX_MB = 20
 MAX_FILES = 10
 
@@ -82,3 +84,5 @@ if files:
         )
 else:
     st.write("Drag files here or click Browse files to start.")
+
+add_cat()
