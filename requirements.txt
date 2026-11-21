@@ -1,2 +1,2 @@
-markitdown[all]
-streamlit
+markitdown[pdf,docx,pptx,xlsx]>=0.1.9,<0.2
+streamlit>=1.40,<2

@@ -6,10 +6,18 @@ from pathlib import Path
 import streamlit as st
 from markitdown import MarkItDown
 
+MAX_MB = 20
+MAX_FILES = 10
+
 st.set_page_config(page_title="File to Markdown", page_icon="📄", layout="centered")
 
 st.title("File to Markdown")
-st.caption("Upload one or more files and download them as .md. Everything runs on your computer.")
+st.caption("Upload files and download them as .md, ready for LLMs and notes.")
+st.info(
+    "Your files are processed on the server only to make the Markdown. "
+    "They are not saved. Avoid uploading sensitive documents to a hosted copy; "
+    "run the app on your own computer if privacy matters."
+)
 
 
 @st.cache_resource
@@ -18,28 +26,36 @@ def get_converter():
 
 
 files = st.file_uploader(
-    "Choose files",
+    f"Choose files (up to {MAX_FILES} files, {MAX_MB} MB each)",
     accept_multiple_files=True,
-    type=["pdf", "docx", "pptx", "xlsx", "xls", "csv", "json", "xml", "html", "htm",
-          "txt", "epub", "zip", "jpg", "jpeg", "png", "wav", "mp3", "msg"],
+    type=["pdf", "docx", "pptx", "xlsx", "csv", "json", "xml", "html", "htm", "epub", "txt"],
 )
 
 if files:
+    if len(files) > MAX_FILES:
+        st.warning(f"Only the first {MAX_FILES} files will be converted.")
+        files = files[:MAX_FILES]
+
     converter = get_converter()
     results = {}
 
     for f in files:
-        suffix = Path(f.name).suffix
+        if f.size > MAX_MB * 1024 * 1024:
+            st.error(f"{f.name} is larger than {MAX_MB} MB and was skipped.")
+            continue
+        tmp_path = None
         with st.spinner(f"Converting {f.name}..."):
             try:
                 # MarkItDown reads from disk, so save the upload to a temp file first
-                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=Path(f.name).suffix) as tmp:
                     tmp.write(f.getbuffer())
                     tmp_path = tmp.name
                 results[f.name] = converter.convert(tmp_path).markdown
-                Path(tmp_path).unlink(missing_ok=True)
             except Exception as e:
                 st.error(f"Could not convert {f.name}: {e}")
+            finally:
+                if tmp_path:
+                    Path(tmp_path).unlink(missing_ok=True)
 
     for name, text in results.items():
         md_name = Path(name).stem + ".md"
@@ -65,4 +81,4 @@ if files:
             mime="application/zip",
         )
 else:
-    st.info("Drag files here or click Choose files to start.")
+    st.write("Drag files here or click Browse files to start.")
